@@ -1,17 +1,20 @@
-import { useState } from 'react'
-import Layout from './components/layout/Layout'
-import './App.css'
-
+import { useState } from 'react';
+import Layout from './components/layout/Layout';
+import Dashboard from './pages/Dashboard';
 
 function App() {
   const [activePage, setActivePage] = useState('dashboard');
 
+  const renderPage = () => {
+    switch (activePage) {
+      case 'dashboard': return <Dashboard />;
+      default: return <div className="text-canton-text">Coming soon: {activePage}</div>;
+    }
+  };
+
   return (
     <Layout activePage={activePage} onNavigate={setActivePage}>
-      <div className="text-canton-text">
-        <h1 className="text-2xl font-bold">Welcome to Canton ETF Platform</h1>
-        <p className="text-canton-muted mt-2">Page: {activePage}</p>
-      </div>
+      {renderPage()}
     </Layout>
   );
 }
