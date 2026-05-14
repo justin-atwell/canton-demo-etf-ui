@@ -3,6 +3,7 @@ import type { Role } from './types';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Rebalance from './pages/Rebalance';
+import Compliance from './pages/Compliance';
 
 function App() {
   const [activePage, setActivePage] = useState('dashboard');
@@ -12,6 +13,7 @@ function App() {
     switch (activePage) {
       case 'dashboard': return <Dashboard />;
       case 'rebalance': return <Rebalance currentRole={currentRole} />;
+      case 'compliance': return <Compliance />;
       default: return (
         <div className="text-canton-text text-lg">
           Coming soon: {activePage}
