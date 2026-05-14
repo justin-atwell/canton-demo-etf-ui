@@ -42,7 +42,7 @@ export default function Dashboard() {
       <div>
         <h1 className="text-2xl font-bold text-canton-text">Dashboard</h1>
         <p className="text-canton-muted text-sm mt-1">
-          Canton ETF Platform — Live on DevNet
+          Canton ETF Platform — (local dev only for now)
         </p>
       </div>
 
