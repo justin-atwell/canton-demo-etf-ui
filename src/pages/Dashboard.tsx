@@ -1,4 +1,6 @@
 import { TrendingUp, DollarSign, Shield, AlertCircle } from 'lucide-react';
+import ActivityFeed from '../components/dashboard/ActivityFeed';
+import NBBOTicker from '../components/dashboard/NBBOTicker';
 
 const stats = [
   {
@@ -42,7 +44,7 @@ export default function Dashboard() {
       <div>
         <h1 className="text-2xl font-bold text-canton-text">Dashboard</h1>
         <p className="text-canton-muted text-sm mt-1">
-          Canton ETF Platform — (local dev only for now)
+          Canton ETF Platform — Live on DevNet
         </p>
       </div>
 
@@ -66,6 +68,12 @@ export default function Dashboard() {
             </div>
           );
         })}
+      </div>
+
+      {/* Bottom row */}
+      <div className="grid grid-cols-2 gap-4">
+        <ActivityFeed />
+        <NBBOTicker />
       </div>
     </div>
   );
