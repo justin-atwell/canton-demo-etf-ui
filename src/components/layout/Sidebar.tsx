@@ -8,21 +8,12 @@ import {
   Activity,
   ChevronRight
 } from 'lucide-react';
-
+import { navItems } from '../../config/navigation';
 interface SidebarProps {
   currentRole: Role;
   activePage: string;
   onNavigate: (page: string) => void;
 }
-
-const navItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['FundManager', 'ComplianceOfficer', 'Custodian', 'Auditor', 'MarketMaker'] },
-  { id: 'etf', label: 'ETF Management', icon: TrendingUp, roles: ['FundManager', 'ComplianceOfficer', 'Auditor'] },
-  { id: 'rebalance', label: 'Rebalancing', icon: RefreshCw, roles: ['FundManager', 'ComplianceOfficer', 'Auditor'] },
-  { id: 'collateral', label: 'Collateral', icon: Shield, roles: ['Custodian', 'FundManager', 'Auditor'] },
-  { id: 'audit', label: 'Audit Trail', icon: Activity, roles: ['Auditor', 'ComplianceOfficer'] },
-  { id: 'compliance', label: 'Compliance', icon: FileText, roles: ['FundManager', 'ComplianceOfficer', 'Custodian', 'Auditor', 'MarketMaker'] },
-];
 
 export default function Sidebar({ currentRole, activePage, onNavigate }: SidebarProps) {
   const visibleItems = navItems.filter(item => item.roles.includes(currentRole));

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Role } from './types';
+import { navItems } from './config/navigation';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Rebalance from './pages/Rebalance';
@@ -11,6 +12,14 @@ import CollateralMonitor from './pages/CollateralMonitor';
 function App() {
   const [activePage, setActivePage] = useState('dashboard');
   const [currentRole, setCurrentRole] = useState<Role>('FundManager');
+
+  const handleRoleChange = (role: Role) => {
+  setCurrentRole(role);
+  const currentItem = navItems.find(item => item.id === activePage);
+  if (currentItem && !currentItem.roles.includes(role)) {
+    setActivePage('dashboard');
+  }
+};
 
   const renderPage = () => {
     switch (activePage) {
@@ -28,12 +37,13 @@ function App() {
     }
   };
 
+
   return (
     <Layout
       activePage={activePage}
       onNavigate={setActivePage}
       currentRole={currentRole}
-      onRoleChange={setCurrentRole}
+      onRoleChange={handleRoleChange}
     >
       {renderPage()}
     </Layout>
