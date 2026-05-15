@@ -1,73 +1,90 @@
-# React + TypeScript + Vite
+The API layer speaks gRPC to a Canton Network participant node via the Daml Java bindings
+(`com.daml:bindings-java:3.4.11`). Every REST call that mutates state submits a ledger
+command. Every read queries active contracts filtered by party.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+---
 
-Currently, two official plugins are available:
+## Daml Contract Inventory
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+**IAM Layer** — LDAP-style identity expressed as first-class ledger objects
+- `DirectoryEntry` — Canton party ↔ LDAP DN mapping
+- `RoleMembership` — Cryptographic role grant (not a DB row — a signed contract)
+- `AccessEvent` — Immutable audit record for every privileged action
 
-## React Compiler
+**Fund Layer**
+- `ETFDefinition` — The fund itself. Signatories: FundManager + Custodian + Compliance
+- `Constituent` — Individual holding with target weight
+- `CapTable` — Ownership distribution
+- `NAV` — Immutable daily NAV record. No choices — append only.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Collateral Layer**
+- `CollateralAccount` — Custodian-controlled asset account
+- `CollateralLock` — Encumbers a specific amount for a specific reason
+- `CollateralRelease` — Unlocks previously locked collateral
+- `HaircutSchedule` — Risk-adjusted collateral valuation
+- `MarginCall` — Issued by Custodian, met or defaulted by FundManager
+- `LiquidationOrder` — Triggered on MarginCall default
 
-## Expanding the ESLint configuration
+**Rebalance Layer**
+- `RebalanceProposal` — Proposed by FundManager, requires Compliance approval
+- `ConstituentApproval` — Per-constituent sign-off
+- `RebalanceExecution` — Final execution record post-approval
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+**Market Data**
+- `NBBOQuote` — National Best Bid/Offer posted by MarketMaker via QuickFIX/J
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Running Locally
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+# Install dependencies
+npm install
+
+# Start dev server
+npm run dev
+# → http://localhost:5173
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The UI runs fully on mock data when the API is unavailable.
+Swap roles in the top bar to explore role-based access across all pages.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+To connect to the live API:
+```bash
+# API must be running on localhost:8080
+# See canton-demo-etf-api for setup
 ```
+
+---
+
+## Canton Network
+
+This platform runs on [Canton Network](https://www.canton.network/) — the interoperable
+blockchain network built on the Daml smart contract language. Canton's privacy model means
+each party only sees the contracts they are a signatory or observer on. The compliance
+workflows in this platform aren't just UI conventions — they're enforced at the ledger level.
+
+DevNet access is sponsored by the Canton Foundation.
+
+---
+
+## About
+
+Built by **Justin Atwell** — Principal Solutions Architect with 15 years across
+institutional capital markets infrastructure (Edward Jones, Bridgewater Associates)
+and enterprise DLT deployments (Hedera Hashgraph / Avery Dennison atma.io).
+
+This platform is part of a five-part LinkedIn series on tokenized asset infrastructure:
+
+- ✅ **Part 1** — Why LDAP Breaks for Tokenized Assets
+- ✅ **Part 2** — IAM as a Ledger Object: RoleMembership as Cryptographic Grant
+- 🔜 **Part 3** — Collateral On-Chain: Margin Calls Without Middleware
+- 🔜 **Part 4** — Rebalancing with Regulatory Teeth: SEC 38a-1 in Daml
+- 🔜 **Part 5** — It's Live: Here's the URL
+
+Follow along: [linkedin.com/in/justin-atwell](https://linkedin.com/in/justin-atwell)
+
+---
+
+*Canton ETF Platform is a demonstration system. Not financial advice. Not investment advice.
+Not legal advice. Just good architecture.*
