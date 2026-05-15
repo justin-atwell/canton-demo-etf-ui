@@ -14,7 +14,6 @@ const roles: { role: Role; label: string; color: string }[] = [
 ];
 
 export default function TopBar({ currentRole, onRoleChange }: TopBarProps) {
-  const current = roles.find(r => r.role === currentRole)!;
 
   return (
     <div className="h-16 bg-canton-darker border-b border-canton-border flex items-center justify-between px-6">
