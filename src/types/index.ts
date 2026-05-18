@@ -42,6 +42,17 @@ export interface EtfDetail {
   inceptionDate: string;  // LocalDate serializes as ISO string "2024-01-15"
 }
 
+export interface ConstituentDetail {
+  contractId: string;
+  ticker: string;
+  name: string;
+  cusip: string;
+  targetWeight: number;
+  currentWeight: number;
+  lastPrice: number;
+  priceChange24h: number;
+}
+
 export interface CreateEtfRequest {
   ticker: string;
   name: string;

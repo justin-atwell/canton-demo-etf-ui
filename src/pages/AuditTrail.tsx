@@ -1,7 +1,16 @@
-import { useState } from 'react';
-import { CheckCircle, XCircle, Filter } from 'lucide-react';
-import type { AccessEvent } from '../types';
+import { useState, useEffect } from 'react';
+import { CheckCircle, XCircle, Filter, RefreshCw } from 'lucide-react';
+import type { AccessEvent, Role } from '../types';
 import { mockAccessEvents } from '../data/mockData';
+import { getAccessEvents } from '../api/audit';
+
+
+interface Props {
+  currentRole: Role;
+  partyId: string;
+}
+
+const AUTH_HEADER = 'Bearer dev';
 
 const allActions = ['CREATE_ETF', 'APPROVE_REBALANCE', 'REJECT_REBALANCE',
   'EXECUTE_REBALANCE', 'LOCK_COLLATERAL', 'RELEASE_COLLATERAL',
@@ -19,65 +28,6 @@ const regulationMap: Record<string, string> = {
   VIEW_CAPTABLE: 'FINRA 3110',
 };
 
-const extendedEvents: AccessEvent[] = [
-  ...mockAccessEvents,
-  {
-    contractId: 'ae::canton::101',
-    operator: 'sandbox::canton-demo::001',
-    actor: 'FundManager::abc123',
-    action: 'EXECUTE_REBALANCE',
-    resource: 'QQQ-REB-002',
-    timestamp: new Date(Date.now() - 600000).toISOString(),
-    granted: true,
-    clientIp: '127.0.0.1',
-    sessionId: 'sess-101',
-  },
-  {
-    contractId: 'ae::canton::102',
-    operator: 'sandbox::canton-demo::001',
-    actor: 'Custodian::ghi789',
-    action: 'RELEASE_COLLATERAL',
-    resource: 'ACC-002',
-    timestamp: new Date(Date.now() - 900000).toISOString(),
-    granted: true,
-    clientIp: '127.0.0.1',
-    sessionId: 'sess-102',
-  },
-  {
-    contractId: 'ae::canton::103',
-    operator: 'sandbox::canton-demo::001',
-    actor: 'MarketMaker::mno345',
-    action: 'POST_NBBO',
-    resource: 'MSFT',
-    timestamp: new Date(Date.now() - 1200000).toISOString(),
-    granted: true,
-    clientIp: '127.0.0.1',
-    sessionId: 'sess-103',
-  },
-  {
-    contractId: 'ae::canton::104',
-    operator: 'sandbox::canton-demo::001',
-    actor: 'Auditor::jkl012',
-    action: 'VIEW_CAPTABLE',
-    resource: 'QQQ',
-    timestamp: new Date(Date.now() - 1800000).toISOString(),
-    granted: true,
-    clientIp: '127.0.0.1',
-    sessionId: 'sess-104',
-  },
-  {
-    contractId: 'ae::canton::105',
-    operator: 'sandbox::canton-demo::001',
-    actor: 'FundManager::abc123',
-    action: 'POST_NAV',
-    resource: 'SPY',
-    timestamp: new Date(Date.now() - 2400000).toISOString(),
-    granted: true,
-    clientIp: '127.0.0.1',
-    sessionId: 'sess-105',
-  },
-];
-
 function timeAgo(timestamp: string): string {
   const seconds = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000);
   if (seconds < 60) return `${seconds}s ago`;
@@ -89,11 +39,30 @@ function shortParty(partyId: string): string {
   return partyId.split('::')[0];
 }
 
-export default function AuditTrail() {
+export default function AuditTrail({ currentRole, partyId }: Props) {
+  const [events, setEvents] = useState<AccessEvent[]>(mockAccessEvents);
+  const [loading, setLoading] = useState(true);
+  const [usingMock, setUsingMock] = useState(false);
   const [filterAction, setFilterAction] = useState<string>('');
   const [filterGranted, setFilterGranted] = useState<string>('');
 
-  const filtered = extendedEvents.filter(e => {
+  const load = async () => {
+    setLoading(true);
+    try {
+      const data = await getAccessEvents(AUTH_HEADER);
+      setEvents(data);
+      setUsingMock(false);
+    } catch {
+      setEvents(mockAccessEvents);
+      setUsingMock(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, [partyId]);
+
+  const filtered = events.filter(e => {
     if (filterAction && e.action !== filterAction) return false;
     if (filterGranted === 'granted' && !e.granted) return false;
     if (filterGranted === 'denied' && e.granted) return false;
@@ -102,11 +71,17 @@ export default function AuditTrail() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-canton-text">Audit Trail</h1>
-        <p className="text-canton-muted text-sm mt-1">
-          Immutable on-chain access events — SEC Rule 17a-4 compliant
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-canton-text">Audit Trail</h1>
+          <p className="text-canton-muted text-sm mt-1">
+            Immutable on-chain access events — SEC Rule 17a-4 compliant
+          </p>
+        </div>
+        <button onClick={load}
+          className="flex items-center gap-2 px-3 py-2 bg-canton-card border border-canton-border rounded-lg text-canton-muted text-sm hover:text-canton-text transition-colors">
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
+        </button>
       </div>
 
       {/* Immutability banner */}
@@ -114,14 +89,20 @@ export default function AuditTrail() {
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 bg-canton-green rounded-full animate-pulse" />
           <span className="text-canton-text text-sm font-medium">
-            {extendedEvents.length} immutable records on Canton ledger
+            {events.length} immutable records on Canton ledger
           </span>
           <span className="text-canton-muted text-sm">•</span>
           <span className="text-canton-muted text-sm">
             Cannot be modified or deleted by design
           </span>
+          {usingMock && (
+            <>
+              <span className="text-canton-muted text-sm">•</span>
+              <span className="text-canton-yellow text-xs">Mock data — ledger unavailable</span>
+            </>
+          )}
         </div>
-        <span className="text-xs bg-green-500/10 border border-green-500/20 
+        <span className="text-xs bg-green-500/10 border border-green-500/20
           text-canton-green px-3 py-1 rounded-lg">
           SEC 17a-4 ✓
         </span>
@@ -133,7 +114,7 @@ export default function AuditTrail() {
         <select
           value={filterAction}
           onChange={e => setFilterAction(e.target.value)}
-          className="bg-canton-card border border-canton-border text-canton-text 
+          className="bg-canton-card border border-canton-border text-canton-text
             text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-canton-accent"
         >
           <option value="">All Actions</option>
@@ -144,7 +125,7 @@ export default function AuditTrail() {
         <select
           value={filterGranted}
           onChange={e => setFilterGranted(e.target.value)}
-          className="bg-canton-card border border-canton-border text-canton-text 
+          className="bg-canton-card border border-canton-border text-canton-text
             text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-canton-accent"
         >
           <option value="">All Results</option>
@@ -152,7 +133,7 @@ export default function AuditTrail() {
           <option value="denied">Denied</option>
         </select>
         <span className="text-canton-muted text-sm">
-          {filtered.length} of {extendedEvents.length} events
+          {filtered.length} of {events.length} events
         </span>
       </div>
 
@@ -167,37 +148,48 @@ export default function AuditTrail() {
           <div className="col-span-2 text-canton-muted text-xs uppercase tracking-wide">Time</div>
         </div>
 
-        {filtered.map((event, i) => (
-          <div
-            key={i}
-            className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-canton-border 
-              last:border-0 hover:bg-canton-darker transition-colors items-center"
-          >
-            <div className="col-span-1">
-              {event.granted
-                ? <CheckCircle size={16} className="text-canton-green" />
-                : <XCircle size={16} className="text-canton-red" />
-              }
-            </div>
-            <div className="col-span-2">
-              <span className="text-canton-text text-sm">{shortParty(event.actor)}</span>
-            </div>
-            <div className="col-span-3">
-              <span className="text-canton-accent text-sm font-mono">{event.action}</span>
-            </div>
-            <div className="col-span-2">
-              <span className="text-canton-muted text-sm">{event.resource}</span>
-            </div>
-            <div className="col-span-2">
-              <span className="text-xs bg-canton-border text-canton-muted px-2 py-0.5 rounded">
-                {regulationMap[event.action] || 'SEC 17a-4'} ✓
-              </span>
-            </div>
-            <div className="col-span-2">
-              <span className="text-canton-muted text-sm">{timeAgo(event.timestamp)}</span>
-            </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <RefreshCw size={18} className="text-canton-accent animate-spin" />
+            <span className="text-canton-muted text-sm ml-3">Querying ledger…</span>
           </div>
-        ))}
+        ) : filtered.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <span className="text-canton-muted text-sm">No events found</span>
+          </div>
+        ) : (
+          filtered.map((event) => (
+            <div
+              key={event.contractId}
+              className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-canton-border
+                last:border-0 hover:bg-canton-darker transition-colors items-center"
+            >
+              <div className="col-span-1">
+                {event.granted
+                  ? <CheckCircle size={16} className="text-canton-green" />
+                  : <XCircle size={16} className="text-canton-red" />
+                }
+              </div>
+              <div className="col-span-2">
+                <span className="text-canton-text text-sm">{shortParty(event.actor)}</span>
+              </div>
+              <div className="col-span-3">
+                <span className="text-canton-accent text-sm font-mono">{event.action}</span>
+              </div>
+              <div className="col-span-2">
+                <span className="text-canton-muted text-sm">{event.resource}</span>
+              </div>
+              <div className="col-span-2">
+                <span className="text-xs bg-canton-border text-canton-muted px-2 py-0.5 rounded">
+                  {regulationMap[event.action] || 'SEC 17a-4'} ✓
+                </span>
+              </div>
+              <div className="col-span-2">
+                <span className="text-canton-muted text-sm">{timeAgo(event.timestamp)}</span>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

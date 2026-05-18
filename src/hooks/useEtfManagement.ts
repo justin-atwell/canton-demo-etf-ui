@@ -1,53 +1,58 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Role, EtfDetail, NavDataPoint } from '../types';
+import type { Role, NavDataPoint } from '../types';
+import type { EtfDetailExtended } from '../mocks/etfDetail';
 import { getEtf, getNavHistory, proposeRebalance } from '../api/etf';
 import { MOCK_ETF_DETAIL, MOCK_NAV_HISTORY } from '../mocks/etfDetail';
 
-const PARTY_IDS: Record<Role, string> = {
-  FundManager:       'FundManager::canton-demo::001',
-  ComplianceOfficer: 'ComplianceOfficer::canton-demo::001',
-  Custodian:         'Custodian::canton-demo::001',
-  Auditor:           'Auditor::canton-demo::001',
-  MarketMaker:       'MarketMaker::canton-demo::001',
-};
+const AUTH_HEADER = 'Bearer dev';
 
 export function useEtfManagement(ticker: string, role: Role) {
-  const [etf, setEtf] = useState<EtfDetail | null>(null);
+  const [etf, setEtf] = useState<EtfDetailExtended | null>(null);
   const [navHistory, setNavHistory] = useState<NavDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [proposalId, setProposalId] = useState<string | null>(null);
-
-  const partyId = PARTY_IDS[role];
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const [etfData, navData] = await Promise.all([
-        getEtf(ticker, partyId),
-        getNavHistory(ticker, partyId),
+        getEtf(AUTH_HEADER, ticker),
+        getNavHistory(AUTH_HEADER, ticker),
       ]);
-      setEtf(etfData);
-      setNavHistory(navData);
+      // API returns EtfDetail without constituents/navPerShare/totalAUM —
+      // merge with mock constituent data until NBBO oracle is live
+      setEtf({
+        ...MOCK_ETF_DETAIL,
+        ...etfData,
+      });
+      setNavHistory(navData.length > 0 ? navData : MOCK_NAV_HISTORY);
     } catch {
-      // Java stubs not yet wired — fall back to mock
       setEtf(MOCK_ETF_DETAIL);
       setNavHistory(MOCK_NAV_HISTORY);
     } finally {
       setLoading(false);
     }
-  }, [ticker, partyId]);
+  }, [ticker]);
 
   useEffect(() => { load(); }, [load]);
 
   const propose = useCallback(async (newWeights: Record<string, number>) => {
+    const proposalIdStr = `PROP-${Date.now()}`;
     try {
-      const res = await proposeRebalance(ticker, { partyId, newWeights });
-      setProposalId(res.proposalId);
+      const weightEntries = Object.entries(newWeights).map(([symbol, weight]) => ({
+        symbol,
+        weight,
+      }));
+      await proposeRebalance(AUTH_HEADER, ticker, {
+        proposalId: proposalIdStr,
+        newWeights: weightEntries,
+      });
+      setProposalId(proposalIdStr);
     } catch {
-      // Stub not implemented — surface a local ID so the UI flow works
-      setProposalId(`PROP-${Date.now()}`);
+      // Surface a local ID so the UI flow still works when ledger is unavailable
+      setProposalId(proposalIdStr);
     }
-  }, [ticker, partyId]);
+  }, [ticker]);
 
   return {
     etf,
