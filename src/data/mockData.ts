@@ -2,39 +2,59 @@ import type { AccessEvent, RebalanceProposal, ETF } from '../types';
 
 export const mockAccessEvents: AccessEvent[] = [
   {
+    contractId: 'ae::canton::001',
+    operator: 'sandbox::canton-demo::001',
     actor: 'FundManager::abc123',
     action: 'CREATE_ETF',
     resource: 'SPY',
     timestamp: new Date(Date.now() - 30000).toISOString(),
     granted: true,
+    clientIp: '127.0.0.1',
+    sessionId: 'sess-001',
   },
   {
+    contractId: 'ae::canton::002',
+    operator: 'sandbox::canton-demo::001',
     actor: 'ComplianceOfficer::def456',
     action: 'APPROVE_REBALANCE',
     resource: 'SPY-REB-001',
     timestamp: new Date(Date.now() - 120000).toISOString(),
     granted: true,
+    clientIp: '127.0.0.1',
+    sessionId: 'sess-002',
   },
   {
+    contractId: 'ae::canton::003',
+    operator: 'sandbox::canton-demo::001',
     actor: 'Custodian::ghi789',
     action: 'LOCK_COLLATERAL',
     resource: 'ACC-001',
     timestamp: new Date(Date.now() - 240000).toISOString(),
     granted: true,
+    clientIp: '127.0.0.1',
+    sessionId: 'sess-003',
   },
   {
+    contractId: 'ae::canton::004',
+    operator: 'sandbox::canton-demo::001',
     actor: 'Auditor::jkl012',
     action: 'VIEW_CAPTABLE',
     resource: 'SPY',
     timestamp: new Date(Date.now() - 360000).toISOString(),
     granted: true,
+    clientIp: '127.0.0.1',
+    sessionId: 'sess-004',
   },
   {
+    contractId: 'ae::canton::005',
+    operator: 'sandbox::canton-demo::001',
     actor: 'MarketMaker::mno345',
     action: 'POST_NBBO',
     resource: 'AAPL',
     timestamp: new Date(Date.now() - 480000).toISOString(),
     granted: true,
+    clientIp: '127.0.0.1',
+    sessionId: 'sess-005',
   },
 ];
 
@@ -59,8 +79,11 @@ export const mockETFs: ETF[] = [
 
 export const mockRebalanceProposals: RebalanceProposal[] = [
   {
+    contractId: 'reb::canton::001',
     proposalId: 'REB-001',
     ticker: 'SPY',
+    fundManager: 'FundManager::abc123',
+    complianceOfficer: 'ComplianceOfficer::def456',
     status: 'Pending',
     newWeights: [
       { symbol: 'AAPL', weight: 0.07 },
@@ -70,8 +93,11 @@ export const mockRebalanceProposals: RebalanceProposal[] = [
     proposedAt: new Date(Date.now() - 3600000).toISOString(),
   },
   {
+    contractId: 'reb::canton::002',
     proposalId: 'REB-002',
     ticker: 'QQQ',
+    fundManager: 'FundManager::abc123',
+    complianceOfficer: 'ComplianceOfficer::def456',
     status: 'Approved',
     newWeights: [
       { symbol: 'AAPL', weight: 0.12 },

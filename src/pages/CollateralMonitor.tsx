@@ -31,15 +31,7 @@ function MetricCard({ label, value, sub, highlight }: {
 }
 
 function AccountRow({ account }: { account: CollateralAccount }) {
-  const utilizationPct = account.balance > 0
-    ? (account.lockedAmount / account.balance) * 100
-    : 0;
-  const utilizationColor = utilizationPct > 80
-    ? 'bg-canton-red'
-    : utilizationPct > 50
-    ? 'bg-canton-yellow'
-    : 'bg-canton-green';
-
+  // balance is the total; no locked/available split from API — show balance only
   return (
     <tr className="border-b border-canton-border hover:bg-white/[0.02] transition-colors">
       <td className="px-4 py-3.5">
@@ -47,27 +39,13 @@ function AccountRow({ account }: { account: CollateralAccount }) {
       </td>
       <td className="px-4 py-3.5 text-canton-text text-sm">{account.asset}</td>
       <td className="px-4 py-3.5 text-canton-text text-sm tabular-nums">
-        {account.balance.toLocaleString()} {account.currency}
+        {account.balance.toLocaleString()}
       </td>
-      <td className="px-4 py-3.5 text-canton-red text-sm tabular-nums">
-        {account.lockedAmount.toLocaleString()} {account.currency}
+      <td className="px-4 py-3.5 text-canton-muted text-xs truncate max-w-[140px]">
+        {account.custodian.split('::')[0]}
       </td>
-      <td className="px-4 py-3.5 text-canton-green text-sm tabular-nums">
-        {account.availableAmount.toLocaleString()} {account.currency}
-      </td>
-      <td className="px-4 py-3.5 min-w-[160px]">
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs text-canton-muted">
-            <span>Utilization</span>
-            <span>{utilizationPct.toFixed(1)}%</span>
-          </div>
-          <div className="h-1.5 bg-white/5 rounded-full">
-            <div
-              className={`h-full rounded-full transition-all ${utilizationColor}`}
-              style={{ width: `${Math.min(utilizationPct, 100)}%` }}
-            />
-          </div>
-        </div>
+      <td className="px-4 py-3.5 text-canton-muted text-xs truncate max-w-[140px]">
+        {account.fundManager.split('::')[0]}
       </td>
       <td className="px-4 py-3.5">
         <span className="font-mono text-canton-muted text-xs truncate max-w-[140px] block">
@@ -79,8 +57,7 @@ function AccountRow({ account }: { account: CollateralAccount }) {
 }
 
 function LockRow({ lock }: { lock: CollateralLock }) {
-  const isExpired = lock.expiresAt ? new Date(lock.expiresAt) < new Date() : false;
-  const isPermanent = lock.expiresAt === null;
+  const isExpired = new Date(lock.expiry) < new Date();
   const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
   });
@@ -88,26 +65,24 @@ function LockRow({ lock }: { lock: CollateralLock }) {
   return (
     <tr className="border-b border-canton-border hover:bg-white/[0.02] transition-colors">
       <td className="px-4 py-3.5">
-        <span className="font-mono font-bold text-canton-accent text-sm">{lock.lockId}</span>
+        <span className="font-mono font-bold text-canton-accent text-sm">
+          {lock.contractId.slice(-8)}
+        </span>
       </td>
-      <td className="px-4 py-3.5 font-mono text-canton-muted text-xs">{lock.accountId}</td>
+      <td className="px-4 py-3.5 text-canton-text text-sm">{lock.asset}</td>
       <td className="px-4 py-3.5 text-canton-text text-sm tabular-nums">{lock.amount.toLocaleString()}</td>
       <td className="px-4 py-3.5 text-canton-text text-sm max-w-[200px]">
         <span className="truncate block">{lock.reason}</span>
       </td>
       <td className="px-4 py-3.5 text-canton-muted text-xs">{fmtDate(lock.lockedAt)}</td>
       <td className="px-4 py-3.5">
-        {isPermanent ? (
-          <span className="flex items-center gap-1 text-canton-yellow text-xs">
-            <Lock size={11} /> Permanent
-          </span>
-        ) : isExpired ? (
+        {isExpired ? (
           <span className="flex items-center gap-1 text-canton-red text-xs">
             <AlertTriangle size={11} /> Expired
           </span>
         ) : (
           <span className="flex items-center gap-1 text-canton-green text-xs">
-            <Clock size={11} /> {fmtDate(lock.expiresAt!)}
+            <Clock size={11} /> {fmtDate(lock.expiry)}
           </span>
         )}
       </td>
@@ -119,22 +94,24 @@ function MarginCallRow({ call }: { call: MarginCall }) {
   const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
   });
-  const isPastDue = new Date(call.dueAt) < new Date() && call.status === 'Pending';
+  const isPastDue = new Date(call.dueBy) < new Date() && call.status === 'Pending';
 
   const statusConfig = {
-    Pending:  { color: 'text-canton-yellow', bg: 'bg-canton-yellow/10', border: 'border-canton-yellow/30', icon: <Clock size={11} /> },
-    Met:      { color: 'text-canton-green',  bg: 'bg-canton-green/10',  border: 'border-canton-green/30',  icon: <CheckCircle size={11} /> },
-    Defaulted:{ color: 'text-canton-red',    bg: 'bg-canton-red/10',    border: 'border-canton-red/30',    icon: <AlertTriangle size={11} /> },
+    Pending:   { color: 'text-canton-yellow', bg: 'bg-canton-yellow/10', border: 'border-canton-yellow/30', icon: <Clock size={11} /> },
+    Met:       { color: 'text-canton-green',  bg: 'bg-canton-green/10',  border: 'border-canton-green/30',  icon: <CheckCircle size={11} /> },
+    Defaulted: { color: 'text-canton-red',    bg: 'bg-canton-red/10',    border: 'border-canton-red/30',    icon: <AlertTriangle size={11} /> },
   }[call.status];
 
   return (
     <tr className="border-b border-canton-border hover:bg-white/[0.02] transition-colors">
       <td className="px-4 py-3.5">
-        <span className="font-mono font-bold text-canton-accent text-sm">{call.callId}</span>
+        <span className="font-mono font-bold text-canton-accent text-sm">
+          {call.contractId.slice(-8)}
+        </span>
       </td>
-      <td className="px-4 py-3.5 font-mono text-canton-muted text-xs">{call.accountId}</td>
+      <td className="px-4 py-3.5 text-canton-text text-sm">{call.asset}</td>
       <td className="px-4 py-3.5 text-canton-text text-sm tabular-nums">
-        {call.amount.toLocaleString()} {call.currency}
+        {call.amountRequired.toLocaleString()}
       </td>
       <td className="px-4 py-3.5">
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold border ${statusConfig.color} ${statusConfig.bg} ${statusConfig.border}`}>
@@ -144,7 +121,7 @@ function MarginCallRow({ call }: { call: MarginCall }) {
       <td className="px-4 py-3.5 text-canton-muted text-xs">{fmtDate(call.issuedAt)}</td>
       <td className="px-4 py-3.5">
         <span className={`text-xs ${isPastDue ? 'text-canton-red font-semibold' : 'text-canton-muted'}`}>
-          {isPastDue ? '⚠ ' : ''}{fmtDate(call.dueAt)}
+          {isPastDue ? '⚠ ' : ''}{fmtDate(call.dueBy)}
         </span>
       </td>
     </tr>
@@ -159,8 +136,7 @@ export default function CollateralMonitor({ currentRole }: Props) {
 
   const [tab, setTab] = useState<Tab>('accounts');
 
-  const totalBalance = accounts.reduce((s, a) => s + (a.currency === 'USD' ? a.balance : 0), 0);
-  const totalLocked = accounts.reduce((s, a) => s + (a.currency === 'USD' ? a.lockedAmount : 0), 0);
+  const totalBalance = accounts.reduce((s, a) => s + a.balance, 0);
   const pendingCalls = marginCalls.filter(m => m.status === 'Pending').length;
   const activeLocks = locks.length;
 
@@ -199,13 +175,12 @@ export default function CollateralMonitor({ currentRole }: Props) {
 
       {/* Metric cards */}
       <div className="grid grid-cols-4 gap-3">
-        <MetricCard label="Total USD Balance" value={fmtUSD(totalBalance)} sub="USD accounts only" highlight="accent" />
-        <MetricCard label="Total Locked" value={fmtUSD(totalLocked)} sub="Active locks"
-          highlight={totalLocked / totalBalance > 0.5 ? 'red' : 'yellow'} />
+        <MetricCard label="Total Balance" value={fmtUSD(totalBalance)} sub="All accounts" highlight="accent" />
         <MetricCard label="Active Locks" value={String(activeLocks)} sub="Across all accounts"
           highlight={activeLocks > 0 ? 'yellow' : 'green'} />
         <MetricCard label="Pending Margin Calls" value={String(pendingCalls)} sub="Awaiting settlement"
           highlight={pendingCalls > 0 ? 'red' : 'green'} />
+        <MetricCard label="Total Accounts" value={String(accounts.length)} sub="On ledger" />
       </div>
 
       {/* Tab bar */}
@@ -239,7 +214,7 @@ export default function CollateralMonitor({ currentRole }: Props) {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-white/[0.02]">
-                {['Account ID', 'Asset', 'Balance', 'Locked', 'Available', 'Utilization', 'Contract ID'].map(h => (
+                {['Account ID', 'Asset', 'Balance', 'Custodian', 'Fund Manager', 'Contract ID'].map(h => (
                   <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-canton-muted uppercase tracking-wide border-b border-canton-border">
                     {h}
                   </th>
@@ -257,7 +232,7 @@ export default function CollateralMonitor({ currentRole }: Props) {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-white/[0.02]">
-                {['Lock ID', 'Account', 'Amount', 'Reason', 'Locked At', 'Expires'].map(h => (
+                {['Lock ID', 'Asset', 'Amount', 'Reason', 'Locked At', 'Expires'].map(h => (
                   <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-canton-muted uppercase tracking-wide border-b border-canton-border">
                     {h}
                   </th>
@@ -275,7 +250,7 @@ export default function CollateralMonitor({ currentRole }: Props) {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-white/[0.02]">
-                {['Call ID', 'Account', 'Amount', 'Status', 'Issued', 'Due'].map(h => (
+                {['Call ID', 'Asset', 'Amount Required', 'Status', 'Issued', 'Due By'].map(h => (
                   <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-canton-muted uppercase tracking-wide border-b border-canton-border">
                     {h}
                   </th>

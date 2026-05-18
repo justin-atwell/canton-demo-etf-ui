@@ -19,43 +19,62 @@ const regulationMap: Record<string, string> = {
   VIEW_CAPTABLE: 'FINRA 3110',
 };
 
-// Extend mock data for this page
 const extendedEvents: AccessEvent[] = [
   ...mockAccessEvents,
   {
+    contractId: 'ae::canton::101',
+    operator: 'sandbox::canton-demo::001',
     actor: 'FundManager::abc123',
     action: 'EXECUTE_REBALANCE',
     resource: 'QQQ-REB-002',
     timestamp: new Date(Date.now() - 600000).toISOString(),
     granted: true,
+    clientIp: '127.0.0.1',
+    sessionId: 'sess-101',
   },
   {
+    contractId: 'ae::canton::102',
+    operator: 'sandbox::canton-demo::001',
     actor: 'Custodian::ghi789',
     action: 'RELEASE_COLLATERAL',
     resource: 'ACC-002',
     timestamp: new Date(Date.now() - 900000).toISOString(),
     granted: true,
+    clientIp: '127.0.0.1',
+    sessionId: 'sess-102',
   },
   {
+    contractId: 'ae::canton::103',
+    operator: 'sandbox::canton-demo::001',
     actor: 'MarketMaker::mno345',
     action: 'POST_NBBO',
     resource: 'MSFT',
     timestamp: new Date(Date.now() - 1200000).toISOString(),
     granted: true,
+    clientIp: '127.0.0.1',
+    sessionId: 'sess-103',
   },
   {
+    contractId: 'ae::canton::104',
+    operator: 'sandbox::canton-demo::001',
     actor: 'Auditor::jkl012',
     action: 'VIEW_CAPTABLE',
     resource: 'QQQ',
     timestamp: new Date(Date.now() - 1800000).toISOString(),
     granted: true,
+    clientIp: '127.0.0.1',
+    sessionId: 'sess-104',
   },
   {
+    contractId: 'ae::canton::105',
+    operator: 'sandbox::canton-demo::001',
     actor: 'FundManager::abc123',
     action: 'POST_NAV',
     resource: 'SPY',
     timestamp: new Date(Date.now() - 2400000).toISOString(),
     granted: true,
+    clientIp: '127.0.0.1',
+    sessionId: 'sess-105',
   },
 ];
 

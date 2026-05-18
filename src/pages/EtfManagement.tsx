@@ -1,12 +1,7 @@
 import { useState } from 'react';
-import type { Role, ConstituentDetail } from '../types';
-import { useEtfManagement } from '../hooks/useEtfManagement';
-import {
-  AreaChart, Area, LineChart, Line,
-  XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer
-} from 'recharts';
-import { RefreshCw, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
+import type { Role, CollateralAccount, CollateralLock, MarginCall } from '../types';
+import { useCollateral } from '../hooks/useCollateral';
+import { Shield, RefreshCw, Lock, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
 interface Props {
   currentRole: Role;
@@ -35,166 +30,119 @@ function MetricCard({ label, value, sub, highlight }: {
   );
 }
 
-function NavChart({ data, view, onViewChange }: {
-  data: { date: string; navPerShare: number; totalAUM: number }[];
-  view: 'nav' | 'aum';
-  onViewChange: (v: 'nav' | 'aum') => void;
-}) {
-  const fmt = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const fmtAUM = (v: number) => `$${(v / 1_000_000).toFixed(0)}M`;
-
-  return (
-    <div className="bg-canton-card border border-canton-border rounded-lg p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <p className="text-canton-text text-sm font-semibold">NAV History</p>
-          <p className="text-canton-muted text-xs mt-0.5">60-day rolling window</p>
-        </div>
-        <div className="flex bg-canton-darker rounded-md p-0.5">
-          {(['nav', 'aum'] as const).map(v => (
-            <button key={v} onClick={() => onViewChange(v)}
-              className={`px-3 py-1 rounded text-xs font-medium transition-all ${
-                view === v ? 'bg-canton-accent text-white' : 'text-canton-muted hover:text-canton-text'
-              }`}>
-              {v === 'nav' ? 'NAV/Share' : 'Total AUM'}
-            </button>
-          ))}
-        </div>
-      </div>
-      <ResponsiveContainer width="100%" height={220}>
-        {view === 'nav' ? (
-          <LineChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-            <XAxis dataKey="date" tickFormatter={fmt} tick={{ fill: '#64748b', fontSize: 11 }}
-              axisLine={false} tickLine={false} interval="preserveStartEnd" />
-            <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false}
-              tickFormatter={v => `$${v.toFixed(2)}`} width={55} />
-            <Tooltip contentStyle={{ background: '#0f1629', border: '1px solid #1e2d4a', borderRadius: 6, fontSize: 12 }}
-              formatter={(v: number) => [`$${v.toFixed(2)}`, 'NAV/Share']}
-              labelFormatter={fmt} />
-            <Line type="monotone" dataKey="navPerShare" stroke="#3b82f6" strokeWidth={2} dot={false}
-              activeDot={{ r: 4, fill: '#3b82f6' }} />
-          </LineChart>
-        ) : (
-          <AreaChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-            <defs>
-              <linearGradient id="aumGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-            <XAxis dataKey="date" tickFormatter={fmt} tick={{ fill: '#64748b', fontSize: 11 }}
-              axisLine={false} tickLine={false} interval="preserveStartEnd" />
-            <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false}
-              tickFormatter={fmtAUM} width={55} />
-            <Tooltip contentStyle={{ background: '#0f1629', border: '1px solid #1e2d4a', borderRadius: 6, fontSize: 12 }}
-              formatter={(v: number) => [fmtAUM(v), 'Total AUM']} labelFormatter={fmt} />
-            <Area type="monotone" dataKey="totalAUM" stroke="#3b82f6" strokeWidth={2}
-              fill="url(#aumGrad)" dot={false} />
-          </AreaChart>
-        )}
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-function DriftBar({ target, current }: { target: number; current: number }) {
-  const drift = current - target;
-  const color = Math.abs(drift) > 2 ? 'bg-canton-red' : Math.abs(drift) > 0.5 ? 'bg-canton-yellow' : 'bg-canton-green';
-  const textColor = Math.abs(drift) > 2 ? 'text-canton-red' : Math.abs(drift) > 0.5 ? 'text-canton-yellow' : 'text-canton-green';
-  return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-xs text-canton-muted">
-        <span>Target {target.toFixed(1)}%</span>
-        <span className={textColor}>{drift > 0 ? '+' : ''}{drift.toFixed(2)}%</span>
-      </div>
-      <div className="relative h-1.5 bg-white/5 rounded-full">
-        <div className={`absolute left-0 top-0 h-full rounded-full transition-all ${color}`}
-          style={{ width: `${Math.min(current, 100)}%` }} />
-        <div className="absolute top-[-3px] w-0.5 h-[9px] bg-canton-muted rounded-sm"
-          style={{ left: `${target}%` }} />
-      </div>
-      <p className="text-xs text-canton-text text-right tabular-nums">Current {current.toFixed(1)}%</p>
-    </div>
-  );
-}
-
-function ConstituentRow({ c, editing, draftWeight, onWeightChange }: {
-  c: ConstituentDetail;
-  editing: boolean;
-  draftWeight: number;
-  onWeightChange: (id: string, v: number) => void;
-}) {
-  const drift = Math.abs(c.currentWeight - c.targetWeight);
+function AccountRow({ account }: { account: CollateralAccount }) {
+  // balance is the total; no locked/available split from API — show balance only
   return (
     <tr className="border-b border-canton-border hover:bg-white/[0.02] transition-colors">
       <td className="px-4 py-3.5">
-        <span className="font-mono font-bold text-canton-accent text-sm">{c.ticker}</span>
+        <span className="font-mono font-bold text-canton-accent text-sm">{account.accountId}</span>
       </td>
-      <td className="px-4 py-3.5 text-canton-text text-sm">{c.name}</td>
-      <td className="px-4 py-3.5 font-mono text-canton-muted text-xs">{c.cusip}</td>
+      <td className="px-4 py-3.5 text-canton-text text-sm">{account.asset}</td>
       <td className="px-4 py-3.5 text-canton-text text-sm tabular-nums">
-        ${c.lastPrice.toLocaleString()}
+        {account.balance.toLocaleString()}
       </td>
-      <td className="px-4 py-3.5 text-sm tabular-nums">
-        <span className={c.priceChange24h >= 0 ? 'text-canton-green' : 'text-canton-red'}>
-          {c.priceChange24h >= 0 ? '+' : ''}{c.priceChange24h.toFixed(2)}%
-        </span>
+      <td className="px-4 py-3.5 text-canton-muted text-xs truncate max-w-[140px]">
+        {account.custodian.split('::')[0]}
       </td>
-      <td className="px-4 py-3.5 min-w-[200px]">
-        {editing ? (
-          <div className="flex items-center gap-2">
-            <input type="range" min={0} max={100} step={0.5} value={draftWeight}
-              onChange={e => onWeightChange(c.contractId, parseFloat(e.target.value))}
-              className="flex-1 accent-canton-accent" />
-            <span className="text-canton-text text-sm tabular-nums w-10 text-right">
-              {draftWeight.toFixed(1)}%
-            </span>
-          </div>
-        ) : (
-          <DriftBar target={c.targetWeight} current={c.currentWeight} />
-        )}
+      <td className="px-4 py-3.5 text-canton-muted text-xs truncate max-w-[140px]">
+        {account.fundManager.split('::')[0]}
       </td>
       <td className="px-4 py-3.5">
-        {drift < 0.5
-          ? <span className="flex items-center gap-1 text-canton-green text-xs"><CheckCircle size={12} /> On target</span>
-          : drift < 2
-          ? <span className="flex items-center gap-1 text-canton-yellow text-xs"><AlertTriangle size={12} /> Minor drift</span>
-          : <span className="flex items-center gap-1 text-canton-red text-xs"><AlertTriangle size={12} /> Rebalance</span>
-        }
+        <span className="font-mono text-canton-muted text-xs truncate max-w-[140px] block">
+          {account.contractId}
+        </span>
       </td>
     </tr>
   );
 }
 
-export default function EtfManagement({ currentRole }: Props) {
-  const { etf, navHistory, loading, proposalId, propose, refresh, clearProposal } =
-    useEtfManagement('CXBT', currentRole);
+function LockRow({ lock }: { lock: CollateralLock }) {
+  const isExpired = new Date(lock.expiry) < new Date();
+  const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
 
-  const [navView, setNavView] = useState<'nav' | 'aum'>('nav');
-  const [editing, setEditing] = useState(false);
-  const [draftWeights, setDraftWeights] = useState<Record<string, number>>({});
+  return (
+    <tr className="border-b border-canton-border hover:bg-white/[0.02] transition-colors">
+      <td className="px-4 py-3.5">
+        <span className="font-mono font-bold text-canton-accent text-sm">
+          {lock.contractId.slice(-8)}
+        </span>
+      </td>
+      <td className="px-4 py-3.5 text-canton-text text-sm">{lock.asset}</td>
+      <td className="px-4 py-3.5 text-canton-text text-sm tabular-nums">{lock.amount.toLocaleString()}</td>
+      <td className="px-4 py-3.5 text-canton-text text-sm max-w-[200px]">
+        <span className="truncate block">{lock.reason}</span>
+      </td>
+      <td className="px-4 py-3.5 text-canton-muted text-xs">{fmtDate(lock.lockedAt)}</td>
+      <td className="px-4 py-3.5">
+        {isExpired ? (
+          <span className="flex items-center gap-1 text-canton-red text-xs">
+            <AlertTriangle size={11} /> Expired
+          </span>
+        ) : (
+          <span className="flex items-center gap-1 text-canton-green text-xs">
+            <Clock size={11} /> {fmtDate(lock.expiry)}
+          </span>
+        )}
+      </td>
+    </tr>
+  );
+}
 
-  const startEditing = () => {
-    if (!etf) return;
-    setDraftWeights(Object.fromEntries(etf.constituents.map(c => [c.contractId, c.targetWeight])));
-    setEditing(true);
-  };
+function MarginCallRow({ call }: { call: MarginCall }) {
+  const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+  const isPastDue = new Date(call.dueBy) < new Date() && call.status === 'Pending';
 
-  const cancelEditing = () => {
-    setEditing(false);
-    setDraftWeights({});
-  };
+  const statusConfig = {
+    Pending:   { color: 'text-canton-yellow', bg: 'bg-canton-yellow/10', border: 'border-canton-yellow/30', icon: <Clock size={11} /> },
+    Met:       { color: 'text-canton-green',  bg: 'bg-canton-green/10',  border: 'border-canton-green/30',  icon: <CheckCircle size={11} /> },
+    Defaulted: { color: 'text-canton-red',    bg: 'bg-canton-red/10',    border: 'border-canton-red/30',    icon: <AlertTriangle size={11} /> },
+  }[call.status];
 
-  const totalDraft = Object.values(draftWeights).reduce((s, v) => s + v, 0);
-  const canSubmit = Math.abs(totalDraft - 100) < 0.01;
+  return (
+    <tr className="border-b border-canton-border hover:bg-white/[0.02] transition-colors">
+      <td className="px-4 py-3.5">
+        <span className="font-mono font-bold text-canton-accent text-sm">
+          {call.contractId.slice(-8)}
+        </span>
+      </td>
+      <td className="px-4 py-3.5 text-canton-text text-sm">{call.asset}</td>
+      <td className="px-4 py-3.5 text-canton-text text-sm tabular-nums">
+        {call.amountRequired.toLocaleString()}
+      </td>
+      <td className="px-4 py-3.5">
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold border ${statusConfig.color} ${statusConfig.bg} ${statusConfig.border}`}>
+          {statusConfig.icon} {call.status}
+        </span>
+      </td>
+      <td className="px-4 py-3.5 text-canton-muted text-xs">{fmtDate(call.issuedAt)}</td>
+      <td className="px-4 py-3.5">
+        <span className={`text-xs ${isPastDue ? 'text-canton-red font-semibold' : 'text-canton-muted'}`}>
+          {isPastDue ? '⚠ ' : ''}{fmtDate(call.dueBy)}
+        </span>
+      </td>
+    </tr>
+  );
+}
 
-  const handlePropose = async () => {
-    await propose(draftWeights);
-    setEditing(false);
-    setDraftWeights({});
-  };
+type Tab = 'accounts' | 'locks' | 'margin-calls';
+
+export default function CollateralMonitor({ currentRole }: Props) {
+  const { accounts, locks, marginCalls, loading, actionError, refresh, clearError } =
+    useCollateral(currentRole);
+
+  const [tab, setTab] = useState<Tab>('accounts');
+
+  const totalBalance = accounts.reduce((s, a) => s + a.balance, 0);
+  const pendingCalls = marginCalls.filter(m => m.status === 'Pending').length;
+  const activeLocks = locks.length;
+
+  const fmtUSD = (v: number) => v >= 1_000_000
+    ? `$${(v / 1_000_000).toFixed(2)}M`
+    : `$${v.toLocaleString()}`;
 
   if (loading) {
     return (
@@ -205,40 +153,19 @@ export default function EtfManagement({ currentRole }: Props) {
     );
   }
 
-  if (!etf) return null;
-
-  const aumFmt = etf.totalAUM >= 1_000_000_000
-    ? `$${(etf.totalAUM / 1_000_000_000).toFixed(2)}B`
-    : `$${(etf.totalAUM / 1_000_000).toFixed(1)}M`;
-
-  const driftCount = etf.constituents.filter(c => Math.abs(c.currentWeight - c.targetWeight) > 2).length;
-  const maxDrift = Math.max(...etf.constituents.map(c => Math.abs(c.currentWeight - c.targetWeight)));
-
   return (
     <div className="space-y-6">
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <TrendingUp size={20} className="text-canton-accent" />
-            <h1 className="text-canton-text text-xl font-bold">{etf.ticker}</h1>
-            <span className={`px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide ${
-              etf.status === 'Active'
-                ? 'bg-canton-green/10 text-canton-green border border-canton-green/30'
-                : 'bg-canton-red/10 text-canton-red border border-canton-red/30'
-            }`}>
-              {etf.status}
-            </span>
-            {currentRole === 'FundManager' && (
-              <span className="px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide bg-canton-yellow/10 text-canton-yellow border border-canton-yellow/30">
-                Fund Manager
-              </span>
-            )}
+        <div className="flex items-center gap-3">
+          <Shield size={20} className="text-canton-accent" />
+          <div>
+            <h1 className="text-canton-text text-xl font-bold">Collateral Monitor</h1>
+            <p className="text-canton-muted text-sm mt-0.5">
+              Basel III · Reg SHO · SEC 17a-4
+            </p>
           </div>
-          <p className="text-canton-muted text-sm mt-1">
-            {etf.name} · CUSIP {etf.cusip} · Inception {etf.inceptionDate}
-          </p>
         </div>
         <button onClick={refresh}
           className="flex items-center gap-2 px-3 py-2 bg-canton-card border border-canton-border rounded-lg text-canton-muted text-sm hover:text-canton-text transition-colors">
@@ -248,92 +175,104 @@ export default function EtfManagement({ currentRole }: Props) {
 
       {/* Metric cards */}
       <div className="grid grid-cols-4 gap-3">
-        <MetricCard label="NAV Per Share" value={`$${etf.navPerShare.toFixed(2)}`} sub="Last batch" highlight="accent" />
-        <MetricCard label="Total AUM" value={aumFmt} sub="USD" />
-        <MetricCard label="Constituents" value={String(etf.constituents.length)}
-          sub={`${driftCount} require rebalance`}
-          highlight={driftCount > 0 ? 'yellow' : 'green'} />
-        <MetricCard label="Max Drift" value={`${maxDrift.toFixed(2)}%`} sub="vs. target"
-          highlight={maxDrift > 2 ? 'red' : maxDrift > 0.5 ? 'yellow' : 'green'} />
+        <MetricCard label="Total Balance" value={fmtUSD(totalBalance)} sub="All accounts" highlight="accent" />
+        <MetricCard label="Active Locks" value={String(activeLocks)} sub="Across all accounts"
+          highlight={activeLocks > 0 ? 'yellow' : 'green'} />
+        <MetricCard label="Pending Margin Calls" value={String(pendingCalls)} sub="Awaiting settlement"
+          highlight={pendingCalls > 0 ? 'red' : 'green'} />
+        <MetricCard label="Total Accounts" value={String(accounts.length)} sub="On ledger" />
       </div>
 
-      {/* NAV chart */}
-      <NavChart data={navHistory} view={navView} onViewChange={setNavView} />
-
-      {/* Constituent table */}
+      {/* Tab bar */}
       <div className="bg-canton-card border border-canton-border rounded-lg overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-canton-border">
-          <div>
-            <p className="text-canton-text text-sm font-semibold">Constituent Weights</p>
-            <p className="text-canton-muted text-xs mt-0.5">
-              {etf.constituents.length} constituents · SEC 22c-1 · FINRA 3110
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            {editing && (
-              <span className={`text-sm tabular-nums font-mono ${canSubmit ? 'text-canton-green' : 'text-canton-red'}`}>
-                Σ {totalDraft.toFixed(2)}%
+        <div className="flex border-b border-canton-border">
+          {([
+            { id: 'accounts',     label: 'Accounts',      count: accounts.length },
+            { id: 'locks',        label: 'Active Locks',  count: locks.length },
+            { id: 'margin-calls', label: 'Margin Calls',  count: marginCalls.length },
+          ] as { id: Tab; label: string; count: number }[]).map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors border-b-2 ${
+                tab === t.id
+                  ? 'border-canton-accent text-canton-accent'
+                  : 'border-transparent text-canton-muted hover:text-canton-text'
+              }`}>
+              {t.label}
+              <span className={`px-1.5 py-0.5 rounded text-xs font-mono ${
+                tab === t.id
+                  ? 'bg-canton-accent/20 text-canton-accent'
+                  : 'bg-white/5 text-canton-muted'
+              }`}>
+                {t.count}
               </span>
-            )}
-            {currentRole === 'FundManager' && !editing && (
-              <button onClick={startEditing}
-                className="px-3 py-1.5 bg-canton-accent/10 border border-canton-accent/40 text-canton-accent text-xs font-semibold rounded-md hover:bg-canton-accent/20 transition-colors">
-                Propose Rebalance
-              </button>
-            )}
-            {editing && (
-              <>
-                <button onClick={cancelEditing}
-                  className="px-3 py-1.5 border border-canton-border text-canton-muted text-xs rounded-md hover:text-canton-text transition-colors">
-                  Cancel
-                </button>
-                <button onClick={handlePropose} disabled={!canSubmit}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                    canSubmit
-                      ? 'bg-canton-accent text-white hover:bg-canton-accent/90'
-                      : 'bg-canton-accent/20 text-canton-muted cursor-not-allowed'
-                  }`}>
-                  Submit Proposal →
-                </button>
-              </>
-            )}
-          </div>
+            </button>
+          ))}
         </div>
 
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-white/[0.02]">
-              {['Ticker', 'Name', 'CUSIP', 'Last Price', '24h', 'Weight Allocation', 'Status'].map(h => (
-                <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-canton-muted uppercase tracking-wide border-b border-canton-border">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {etf.constituents.map(c => (
-              <ConstituentRow
-                key={c.contractId}
-                c={c}
-                editing={editing && currentRole === 'FundManager'}
-                draftWeight={draftWeights[c.contractId] ?? c.targetWeight}
-                onWeightChange={(id, v) => setDraftWeights(prev => ({ ...prev, [id]: v }))}
-              />
-            ))}
-          </tbody>
-        </table>
+        {/* Accounts tab */}
+        {tab === 'accounts' && (
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-white/[0.02]">
+                {['Account ID', 'Asset', 'Balance', 'Custodian', 'Fund Manager', 'Contract ID'].map(h => (
+                  <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-canton-muted uppercase tracking-wide border-b border-canton-border">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {accounts.map(a => <AccountRow key={a.contractId} account={a} />)}
+            </tbody>
+          </table>
+        )}
+
+        {/* Locks tab */}
+        {tab === 'locks' && (
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-white/[0.02]">
+                {['Lock ID', 'Asset', 'Amount', 'Reason', 'Locked At', 'Expires'].map(h => (
+                  <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-canton-muted uppercase tracking-wide border-b border-canton-border">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {locks.map(l => <LockRow key={l.contractId} lock={l} />)}
+            </tbody>
+          </table>
+        )}
+
+        {/* Margin calls tab */}
+        {tab === 'margin-calls' && (
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-white/[0.02]">
+                {['Call ID', 'Asset', 'Amount Required', 'Status', 'Issued', 'Due By'].map(h => (
+                  <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-canton-muted uppercase tracking-wide border-b border-canton-border">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {marginCalls.map(m => <MarginCallRow key={m.contractId} call={m} />)}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {/* Proposal toast */}
-      {proposalId && (
-        <div className="fixed bottom-6 right-6 bg-canton-card border border-canton-green/40 rounded-lg px-5 py-4 flex items-start gap-3 shadow-xl z-50 max-w-sm">
-          <CheckCircle size={18} className="text-canton-green mt-0.5 shrink-0" />
+      {/* Error toast */}
+      {actionError && (
+        <div className="fixed bottom-6 right-6 bg-canton-card border border-canton-red/40 rounded-lg px-5 py-4 flex items-start gap-3 shadow-xl z-50 max-w-sm">
+          <AlertTriangle size={18} className="text-canton-red mt-0.5 shrink-0" />
           <div className="flex-1">
-            <p className="text-canton-green text-sm font-semibold">Rebalance Proposal Submitted</p>
-            <p className="text-canton-muted text-xs font-mono mt-1">{proposalId}</p>
-            <p className="text-canton-muted text-xs mt-1">Awaiting ComplianceOfficer approval · SEC 38a-1</p>
+            <p className="text-canton-red text-sm font-semibold">Action Failed</p>
+            <p className="text-canton-muted text-xs mt-1">{actionError}</p>
           </div>
-          <button onClick={clearProposal} className="text-canton-muted hover:text-canton-text text-lg leading-none">×</button>
+          <button onClick={clearError} className="text-canton-muted hover:text-canton-text text-lg leading-none">×</button>
         </div>
       )}
 
