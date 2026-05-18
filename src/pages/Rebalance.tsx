@@ -4,8 +4,6 @@ import type { RebalanceProposal, Role } from '../types';
 import { mockRebalanceProposals } from '../data/mockData';
 import { getProposal, approveProposal, rejectProposal, getProposals, executeProposal } from '../api/etf';
 
-const AUTH_HEADER = 'Bearer dev';
-
 const statusConfig = {
   Pending:  { color: 'text-canton-yellow', bg: 'bg-yellow-500/10 border-yellow-500/20', icon: Clock },
   Approved: { color: 'text-canton-green',  bg: 'bg-green-500/10 border-green-500/20',   icon: CheckCircle },
@@ -30,6 +28,7 @@ export default function Rebalance({ currentRole }: RebalanceProps) {
   const [usingMock, setUsingMock] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const AUTH_HEADER = `Bearer dev-${currentRole}`;
 
   useEffect(() => {
   const load = async () => {

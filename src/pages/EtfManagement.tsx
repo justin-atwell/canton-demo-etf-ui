@@ -317,7 +317,7 @@ const startEditing = () => {
                 key={c.contractId}
                 c={c}
                 editing={editing && currentRole === 'FundManager'}
-                draftWeight={draftWeights[c.contractId] ?? c.targetWeight}
+                draftWeight={draftWeights[c.ticker] ?? c.targetWeight}
                 onWeightChange={(_id, v) => setDraftWeights(prev => ({ ...prev, [c.ticker]: v }))}
               />
             ))}

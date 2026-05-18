@@ -10,8 +10,6 @@ interface Props {
   partyId: string;
 }
 
-const AUTH_HEADER = 'Bearer dev';
-
 const allActions = ['CREATE_ETF', 'APPROVE_REBALANCE', 'REJECT_REBALANCE',
   'EXECUTE_REBALANCE', 'LOCK_COLLATERAL', 'RELEASE_COLLATERAL',
   'POST_NAV', 'POST_NBBO', 'VIEW_CAPTABLE'];
@@ -45,6 +43,7 @@ export default function AuditTrail({ currentRole, partyId }: Props) {
   const [usingMock, setUsingMock] = useState(false);
   const [filterAction, setFilterAction] = useState<string>('');
   const [filterGranted, setFilterGranted] = useState<string>('');
+  const AUTH_HEADER = `Bearer dev-${currentRole}`;
 
   const load = async () => {
     setLoading(true);

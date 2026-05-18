@@ -3,7 +3,7 @@ import type { Role, CollateralAccount, CollateralLock, MarginCall, LockCollatera
 import { getAccounts, getLocks, getMarginCalls, lockCollateral, issueMarginCall } from '../api/collateral';
 import { MOCK_ACCOUNTS, MOCK_LOCKS, MOCK_MARGIN_CALLS } from '../mocks/collateral';
 
-const AUTH_HEADER = 'Bearer dev';
+
 
 export function useCollateral(role: Role) {
   const [accounts, setAccounts] = useState<CollateralAccount[]>([]);
@@ -12,7 +12,7 @@ export function useCollateral(role: Role) {
   const [loading, setLoading] = useState(true);
   const [usingMock, setUsingMock] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-
+  const AUTH_HEADER = `Bearer dev-${role}`;
   const load = useCallback(async () => {
     setLoading(true);
     try {

@@ -4,14 +4,13 @@ import type { EtfDetailExtended } from '../mocks/etfDetail';
 import { getEtf, getNavHistory, proposeRebalance } from '../api/etf';
 import { MOCK_ETF_DETAIL, MOCK_NAV_HISTORY } from '../mocks/etfDetail';
 
-const AUTH_HEADER = 'Bearer dev';
-
 export function useEtfManagement(ticker: string, role: Role) {
   const [etf, setEtf] = useState<EtfDetailExtended | null>(null);
   const [navHistory, setNavHistory] = useState<NavDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [proposalId, setProposalId] = useState<string | null>(null);
-
+  const AUTH_HEADER = `Bearer dev-${role}`;
+  
   const load = useCallback(async () => {
     setLoading(true);
     try {
