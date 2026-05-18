@@ -62,7 +62,7 @@ To connect to the live API:
 This platform runs on [Canton Network](https://www.canton.network/) — the interoperable
 blockchain network built on the Daml smart contract language. Canton's privacy model means
 each party only sees the contracts they are a signatory or observer on. The compliance
-workflows in this platform aren't just UI conventions — they're enforced at the ledger level.
+workflows in this platform aren't just UI items, they're enforced at the ledger level.
 
 DevNet access is sponsored by the Canton Foundation.
 
@@ -86,5 +86,5 @@ Follow along: [linkedin.com/in/justin-atwell](https://linkedin.com/in/justin-atw
 
 ---
 
-*Canton ETF Platform is a demonstration system. Not financial advice. Not investment advice.
+*This is not related to Canton the company. Canton ETF Platform is a demonstration system. Not financial advice. Not investment advice.
 Not legal advice. Just good architecture.*
