@@ -40,6 +40,7 @@ function NavChart({ data, view, onViewChange }: {
   view: 'nav' | 'aum';
   onViewChange: (v: 'nav' | 'aum') => void;
 }) {
+  if (!data || data.length === 0) return null;
   const fmt = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const fmtAUM = (v: number) => `$${(v / 1_000_000).toFixed(0)}M`;
 
@@ -176,11 +177,11 @@ export default function EtfManagement({ currentRole }: Props) {
   const [editing, setEditing] = useState(false);
   const [draftWeights, setDraftWeights] = useState<Record<string, number>>({});
 
-  const startEditing = () => {
-    if (!etf) return;
-    setDraftWeights(Object.fromEntries(etf.constituents.map(c => [c.contractId, c.targetWeight])));
-    setEditing(true);
-  };
+const startEditing = () => {
+  if (!etf) return;
+  setDraftWeights(Object.fromEntries(etf.constituents.map(c => [c.ticker, c.targetWeight])));
+  setEditing(true);
+};
 
   const cancelEditing = () => {
     setEditing(false);
@@ -317,7 +318,7 @@ export default function EtfManagement({ currentRole }: Props) {
                 c={c}
                 editing={editing && currentRole === 'FundManager'}
                 draftWeight={draftWeights[c.contractId] ?? c.targetWeight}
-                onWeightChange={(id, v) => setDraftWeights(prev => ({ ...prev, [id]: v }))}
+                onWeightChange={(_id, v) => setDraftWeights(prev => ({ ...prev, [c.ticker]: v }))}
               />
             ))}
           </tbody>

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, XCircle, Clock, Play, RefreshCw } from 'lucide-react';
 import type { RebalanceProposal, Role } from '../types';
 import { mockRebalanceProposals } from '../data/mockData';
-import { getProposal, approveProposal, rejectProposal, executeProposal } from '../api/etf';
+import { getProposal, approveProposal, rejectProposal, getProposals, executeProposal } from '../api/etf';
 
 const AUTH_HEADER = 'Bearer dev';
 
@@ -25,11 +25,25 @@ interface RebalanceProps {
 }
 
 export default function Rebalance({ currentRole }: RebalanceProps) {
-  const [proposals, setProposals] = useState<RebalanceProposal[]>(mockRebalanceProposals);
+  const [proposals, setProposals] = useState<RebalanceProposal[]>([]);
   const [selected, setSelected] = useState<RebalanceProposal | null>(null);
   const [usingMock, setUsingMock] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  useEffect(() => {
+  const load = async () => {
+    try {
+      const data = await getProposals(AUTH_HEADER, 'CXBT');
+      setProposals(data.length > 0 ? data : mockRebalanceProposals);
+      setUsingMock(data.length === 0);
+    } catch {
+      setProposals(mockRebalanceProposals);
+      setUsingMock(true);
+    }
+  };
+  load();
+}, []);
 
   // Refresh a single proposal from the ledger after an action
   const refreshProposal = useCallback(async (ticker: string, proposalId: string) => {
@@ -189,6 +203,7 @@ export default function Rebalance({ currentRole }: RebalanceProps) {
                 </h3>
                 <div className="space-y-2">
                   {selected.newWeights.map(w => (
+                    
                     <div key={w.symbol} className="flex items-center gap-3">
                       <span className="text-canton-text text-sm w-16 font-medium">
                         {w.symbol}
@@ -196,11 +211,11 @@ export default function Rebalance({ currentRole }: RebalanceProps) {
                       <div className="flex-1 bg-canton-darker rounded-full h-2">
                         <div
                           className="bg-canton-accent h-2 rounded-full transition-all"
-                          style={{ width: `${w.weight * 100}%` }}
+                          style={{ width: `${Math.min(w.weight > 1 ? w.weight : w.weight * 100, 100)}%` }}
                         />
                       </div>
                       <span className="text-canton-muted text-sm w-12 text-right">
-                        {(w.weight * 100).toFixed(1)}%
+                        {(w.weight > 1 ? w.weight : w.weight * 100).toFixed(1)}%
                       </span>
                     </div>
                   ))}

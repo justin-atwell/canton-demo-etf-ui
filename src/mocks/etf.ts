@@ -23,8 +23,13 @@ export const MOCK_NAV: NavDataPoint[] = Array.from({ length: 60 }, (_, i) => {
   const d = new Date('2025-03-01');
   d.setDate(d.getDate() + i);
   return {
-    date: d.toISOString().split('T')[0],
-    navPerShare: parseFloat((72 + i * 0.21 + Math.sin(i * 0.4) * 1.8).toFixed(2)),
-    totalAUM: Math.round((72 + i * 0.21) * 10_000_000),
-  };
+  contractId: `nav::mock::${i}`,
+  ticker: 'CXBT',
+  date: d.toISOString().split('T')[0],   // add this
+  navDate: d.toISOString().split('T')[0],
+  navPerShare: parseFloat((72 + i * 0.21 + Math.sin(i * 0.4) * 1.8).toFixed(2)),
+  totalAUM: Math.round((72 + i * 0.21) * 10_000_000),
+  source: 'mock',
+  fundManager: 'FundManager::canton-demo::001',
+};
 });

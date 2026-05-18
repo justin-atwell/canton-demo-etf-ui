@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Role, CollateralAccount, CollateralLock, MarginCall, LockCollateralRequest, IssueMarginCallRequest } from '../types';
-import { lockCollateral, issueMarginCall } from '../api/collateral';
+import { getAccounts, getLocks, getMarginCalls, lockCollateral, issueMarginCall } from '../api/collateral';
 import { MOCK_ACCOUNTS, MOCK_LOCKS, MOCK_MARGIN_CALLS } from '../mocks/collateral';
 
 const AUTH_HEADER = 'Bearer dev';
@@ -10,16 +10,26 @@ export function useCollateral(role: Role) {
   const [locks, setLocks] = useState<CollateralLock[]>([]);
   const [marginCalls, setMarginCalls] = useState<MarginCall[]>([]);
   const [loading, setLoading] = useState(true);
+  const [usingMock, setUsingMock] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      // No GET endpoints on CollateralController yet — use mock data
-      // TODO: wire to real API once GET endpoints are added
+      const [accs, lks, mcs] = await Promise.all([
+        getAccounts(AUTH_HEADER),
+        getLocks(AUTH_HEADER),
+        getMarginCalls(AUTH_HEADER),
+      ]);
+      setAccounts(accs);
+      setLocks(lks);
+      setMarginCalls(mcs);
+      setUsingMock(false);
+    } catch {
       setAccounts(MOCK_ACCOUNTS);
       setLocks(MOCK_LOCKS);
       setMarginCalls(MOCK_MARGIN_CALLS);
+      setUsingMock(true);
     } finally {
       setLoading(false);
     }
@@ -31,7 +41,7 @@ export function useCollateral(role: Role) {
     setActionError(null);
     try {
       await lockCollateral(AUTH_HEADER, req.accountId, req);
-      await load(); // refresh after action
+      await load();
     } catch {
       setActionError('Lock failed — check ledger connection');
     }
@@ -52,6 +62,7 @@ export function useCollateral(role: Role) {
     locks,
     marginCalls,
     loading,
+    usingMock,
     actionError,
     lock,
     issueCall,

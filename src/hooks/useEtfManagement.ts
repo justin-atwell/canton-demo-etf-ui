@@ -15,21 +15,28 @@ export function useEtfManagement(ticker: string, role: Role) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [etfData, navData] = await Promise.all([
-        getEtf(AUTH_HEADER, ticker),
-        getNavHistory(AUTH_HEADER, ticker),
-      ]);
-      // API returns EtfDetail without constituents/navPerShare/totalAUM —
-      // merge with mock constituent data until NBBO oracle is live
-      setEtf({
-        ...MOCK_ETF_DETAIL,
-        ...etfData,
-      });
-      setNavHistory(navData.length > 0 ? navData : MOCK_NAV_HISTORY);
-    } catch {
-      setEtf(MOCK_ETF_DETAIL);
-      setNavHistory(MOCK_NAV_HISTORY);
-    } finally {
+  const [etfData, navData] = await Promise.all([
+    getEtf(AUTH_HEADER, ticker),
+    getNavHistory(AUTH_HEADER, ticker),
+  ]);
+  setEtf({
+    ...MOCK_ETF_DETAIL,
+    ...etfData,
+  });
+  const transformed = Array.isArray(navData)
+    ? navData.map(n => ({ ...n, date: n.navDate }))
+    : [];
+
+    console.log('navData from API:', navData);
+console.log('transformed:', transformed);
+
+  setNavHistory(transformed.length > 0 ? transformed : MOCK_NAV_HISTORY);
+} catch {
+  setEtf(MOCK_ETF_DETAIL);
+  setNavHistory(MOCK_NAV_HISTORY);
+}
+
+finally {
       setLoading(false);
     }
   }, [ticker]);

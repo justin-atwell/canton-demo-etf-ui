@@ -131,7 +131,7 @@ function MarginCallRow({ call }: { call: MarginCall }) {
 type Tab = 'accounts' | 'locks' | 'margin-calls';
 
 export default function CollateralMonitor({ currentRole }: Props) {
-  const { accounts, locks, marginCalls, loading, actionError, refresh, clearError } =
+  const { accounts, locks, marginCalls, loading, usingMock, actionError, refresh, clearError } =
     useCollateral(currentRole);
 
   const [tab, setTab] = useState<Tab>('accounts');
@@ -167,10 +167,17 @@ export default function CollateralMonitor({ currentRole }: Props) {
             </p>
           </div>
         </div>
+        <div className="flex items-center gap-3">
+          {usingMock && (
+        <span className="text-canton-yellow text-xs border border-canton-yellow/30 bg-canton-yellow/10 px-3 py-1 rounded-lg">
+          Mock data — ledger unavailable
+        </span>
+      )}
         <button onClick={refresh}
           className="flex items-center gap-2 px-3 py-2 bg-canton-card border border-canton-border rounded-lg text-canton-muted text-sm hover:text-canton-text transition-colors">
           <RefreshCw size={14} /> Refresh
         </button>
+      </div>
       </div>
 
       {/* Metric cards */}

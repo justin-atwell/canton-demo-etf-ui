@@ -56,11 +56,27 @@ export async function getNavHistory(
   authHeader: string,
   ticker: string
 ): Promise<NavDataPoint[]> {
-  const { data } = await axios.get(`${BASE}/etf/${ticker}/nav`, {
+  const { data } = await axios.get(`${BASE}/etf/${ticker}/nav/history`, {
     headers: { Authorization: authHeader },
   });
   return data;
 }
+export async function getProposals(
+  authHeader: string,
+  ticker: string
+): Promise<RebalanceProposal[]> {
+  const { data } = await axios.get(`${BASE}/etf/${ticker}/rebalance`, {
+    headers: { Authorization: authHeader },
+  });
+  return data.map((p: any) => ({
+    ...p,
+    newWeights: p.newWeights.map((w: any) => ({
+      symbol: w._1,
+      weight: w._2,
+    })),
+  }));
+}
+
 
 // -------------------------------------------------------------------------
 // Rebalance
@@ -85,7 +101,13 @@ export async function getProposal(
   const { data } = await axios.get(`${BASE}/etf/${ticker}/rebalance/${proposalId}`, {
     headers: { Authorization: authHeader },
   });
-  return data;
+  return {
+    ...data,
+    newWeights: data.newWeights.map((w: any) => ({
+      symbol: w._1,
+      weight: w._2,
+    })),
+  };
 }
 
 export async function approveProposal(

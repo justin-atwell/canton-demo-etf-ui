@@ -12,7 +12,32 @@ import type {
 const BASE = 'http://localhost:8080';
 
 // -------------------------------------------------------------------------
-// Accounts
+// Reads
+// -------------------------------------------------------------------------
+
+export async function getAccounts(authHeader: string): Promise<CollateralAccount[]> {
+  const { data } = await axios.get(`${BASE}/collateral`, {
+    headers: { Authorization: authHeader },
+  });
+  return data;
+}
+
+export async function getLocks(authHeader: string): Promise<CollateralLock[]> {
+  const { data } = await axios.get(`${BASE}/collateral/locks`, {
+    headers: { Authorization: authHeader },
+  });
+  return data;
+}
+
+export async function getMarginCalls(authHeader: string): Promise<MarginCall[]> {
+  const { data } = await axios.get(`${BASE}/collateral/margincalls`, {
+    headers: { Authorization: authHeader },
+  });
+  return data;
+}
+
+// -------------------------------------------------------------------------
+// Account
 // -------------------------------------------------------------------------
 
 export async function createAccount(
